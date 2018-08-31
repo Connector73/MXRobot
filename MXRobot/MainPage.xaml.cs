@@ -16,6 +16,8 @@ using System.Diagnostics;
 using BaseCSTA;
 using System.Threading.Tasks;
 using Windows.UI.Xaml.Navigation;
+using System.Text;
+using Windows.System;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -71,6 +73,81 @@ namespace MXRobot
             await DoLogin();
         }
 
+        //*************************************************
+        //*************************************************
+        //********** EXECUTE COMMAND LINE STRING **********
+        //*************************************************
+        //*************************************************
+        private async Task<string> ExecuteCommandLineString(string CommandString)
+        {
+            const string CommandLineProcesserExe = "c:\\windows\\system32\\cmd.exe";
+            const uint CommandStringResponseBufferSize = 8192;
+            string currentDirectory = "C:\\";
+
+            StringBuilder textOutput = new StringBuilder((int)CommandStringResponseBufferSize);
+            uint bytesLoaded = 0;
+
+            if (string.IsNullOrWhiteSpace(CommandString))
+                return ("");
+
+            var commandLineText = CommandString.Trim();
+
+            var standardOutput = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+            var standardError = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+            var options = new Windows.System.ProcessLauncherOptions
+            {
+                StandardOutput = standardOutput,
+                StandardError = standardError
+            };
+
+            try
+            {
+                var args = "/C \"cd \"" + currentDirectory + "\" & " + commandLineText + "\"";
+                var result = await Windows.System.ProcessLauncher.RunToCompletionAsync(CommandLineProcesserExe, args, options);
+
+                //First write std out
+                using (var outStreamRedirect = standardOutput.GetInputStreamAt(0))
+                {
+                    using (var dataReader = new Windows.Storage.Streams.DataReader(outStreamRedirect))
+                    {
+                        while ((bytesLoaded = await dataReader.LoadAsync(CommandStringResponseBufferSize)) > 0)
+                            textOutput.Append(dataReader.ReadString(bytesLoaded));
+
+                        new System.Threading.ManualResetEvent(false).WaitOne(10);
+                        if ((bytesLoaded = await dataReader.LoadAsync(CommandStringResponseBufferSize)) > 0)
+                            textOutput.Append(dataReader.ReadString(bytesLoaded));
+                    }
+                }
+
+                //Then write std err
+                using (var errStreamRedirect = standardError.GetInputStreamAt(0))
+                {
+                    using (var dataReader = new Windows.Storage.Streams.DataReader(errStreamRedirect))
+                    {
+                        while ((bytesLoaded = await dataReader.LoadAsync(CommandStringResponseBufferSize)) > 0)
+                            textOutput.Append(dataReader.ReadString(bytesLoaded));
+
+                        new System.Threading.ManualResetEvent(false).WaitOne(10);
+                        if ((bytesLoaded = await dataReader.LoadAsync(CommandStringResponseBufferSize)) > 0)
+                            textOutput.Append(dataReader.ReadString(bytesLoaded));
+                    }
+                }
+
+                return (textOutput.ToString());
+            }
+            catch (UnauthorizedAccessException uex)
+            {
+                return ("ERROR - " + uex.Message + "\n\nCmdNotEnabled");
+            }
+            catch (Exception ex)
+            {
+                return ("ERROR - " + ex.Message + "\n");
+            }
+        }
+
+
+
+
         private async void E_OnEvent(object sender, EventArgs e)
         {
             Debug.WriteLine("Event", ((CSTAEventArgs)e).eventName);
@@ -93,11 +170,13 @@ namespace MXRobot
                         });
                         Debug.WriteLine("Sent ACK for Message");
 
+                        string response = await ExecuteCommandLineString(text);
+
                         await csta.ExecuteHandler("message", new Dictionary<string, string>()
                         {
                             {"userId", args["from"].ToString() }, // Send to Test User
                             {"ext", "" },
-                            {"text", text }
+                            {"text", response }
                         });
                         Debug.WriteLine("Sent Echo Message");
                     }

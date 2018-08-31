@@ -128,15 +128,23 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\BaseCSTA\BaseCSTA\BaseCSTA.csproj">
+      <Project>{c321ddb6-025c-4eb6-ad74-059f0a1e6e36}</Project>
+      <Name>BaseCSTA</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Windows\System\" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>6.1.7</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\BaseCSTA\BaseCSTA\BaseCSTA.csproj">
-      <Project>{c321ddb6-025c-4eb6-ad74-059f0a1e6e36}</Project>
-      <Name>BaseCSTA</Name>
-    </ProjectReference>
+    <SDKReference Include="WindowsIoT, Version=10.0.17134.0">
+      <Name>Windows IoT Extensions for the UWP</Name>
+    </SDKReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
