@@ -1,11 +1,21 @@
-﻿using System;
+﻿//*********************************************************
+//
+// Copyright (c) Connector73. All rights reserved.
+// This code is licensed under the MIT License (MIT).
+// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
+// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
+// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
+// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
+//
+//*********************************************************
+
+using System;
 using System.Collections.Generic;
 using Windows.UI.Xaml.Controls;
 using System.Diagnostics;
 using BaseCSTA;
 using System.Threading.Tasks;
 using Windows.UI.Xaml.Navigation;
-using Windows.UI.Core;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -25,7 +35,14 @@ namespace MXRobot
             csta = new Messenger();
             ICSTAEvent e = (ICSTAEvent)csta;
             e.OnEvent += E_OnEvent;
+            ICSTAErrorEvent err = (ICSTAErrorEvent)csta;
+            err.OnEvent += E_OnErrorEvent;
             myJid = null;
+
+            csta.AddHandler(new Presence());
+            csta.AddHandler(new MessageHistory());
+            csta.AddHandler(new MessageAck());
+            csta.AddHandler(new SendMessage());
         }
 
         private string ListValues(Dictionary<string, object> args, string tab)
@@ -48,6 +65,10 @@ namespace MXRobot
                 }
             }
             return outValue;
+        }
+        private async void E_OnErrorEvent(object sender, EventArgs e)
+        {
+            await DoLogin();
         }
 
         private async void E_OnEvent(object sender, EventArgs e)
@@ -78,7 +99,6 @@ namespace MXRobot
                             {"ext", "" },
                             {"text", text }
                         });
-
                         Debug.WriteLine("Sent Echo Message");
                     }
                 }
@@ -94,14 +114,11 @@ namespace MXRobot
             bool result = await csta.Connect("631hc.connector73.net", "7778", ConnectType.Secure);
             if (result)
             {
-                csta.AddHandler(new Presence());
-                csta.AddHandler(new MessageHistory());
-                csta.AddHandler(new MessageAck());
-                csta.AddHandler(new SendMessage());
                 await csta.Login("maximd", "ihZ6nW62");
-            } else
+            }
+            else
             {
-                csta.Disconnect();
+                await csta.Disconnect();
                 csta = null;
             }
         }
