@@ -81,7 +81,7 @@ namespace MXRobot
         private async Task<string> ExecuteCommandLineString(string CommandString)
         {
             const string CommandLineProcesserExe = "c:\\windows\\system32\\cmd.exe";
-            const uint CommandStringResponseBufferSize = 8192;
+            const uint CommandStringResponseBufferSize = 64 * 1024;
             string currentDirectory = "C:\\";
 
             StringBuilder textOutput = new StringBuilder((int)CommandStringResponseBufferSize);
@@ -145,9 +145,6 @@ namespace MXRobot
             }
         }
 
-
-
-
         private async void E_OnEvent(object sender, EventArgs e)
         {
             Debug.WriteLine("Event", ((CSTAEventArgs)e).eventName);
@@ -170,7 +167,14 @@ namespace MXRobot
                         });
                         Debug.WriteLine("Sent ACK for Message");
 
+                        int maxlength = 1024 * 32 - 256;
+
                         string response = await ExecuteCommandLineString(text);
+
+                        if (response.Length > maxlength)
+                        {
+                            response = response.Substring(0, maxlength) + "...";
+                        }
 
                         await csta.ExecuteHandler("message", new Dictionary<string, string>()
                         {
@@ -193,7 +197,7 @@ namespace MXRobot
             bool result = await csta.Connect("631hc.connector73.net", "7778", ConnectType.Secure);
             if (result)
             {
-                await csta.Login("maximd", "ihZ6nW62");
+                await csta.Login("ctestuser1", "nVsgvK");
             }
             else
             {
